@@ -1,55 +1,58 @@
+import com.android.build.api.dsl.ApplicationExtension
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose")
+    // In AGP 9.0, the Compose Compiler is now a plugin
+    id("org.jetbrains.kotlin.plugin.compose") version "2.3.10"
 }
 
-android {
+// 1. Android-specific configuration
+extensions.configure<ApplicationExtension> {
     namespace = "app.quran4wearos"
-    compileSdk = 35 // Standard stable SDK for 2025/2026
+    // THIS FIXES YOUR ERROR: Explicitly defined inside the extension
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "app.quran4wearos"
         minSdk = 30
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+    }
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildFeatures {
         compose = true
     }
 
-    // Since you are using Kotlin 2.1.0, NO composeOptions block is needed.
+    // Note: composeOptions { kotlinCompilerExtensionVersion } is REMOVED in Kotlin 2.0+
+}
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = "11"
+// 2. Kotlin-specific configuration (FIXES 'compilerOptions' error)
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
 dependencies {
-    // Wear OS Compose Dependencies (Required for your Activity code)
-    val wearComposeVersion = "1.4.0"
-    implementation("androidx.wear.compose:compose-material:$wearComposeVersion")
-    implementation("androidx.wear.compose:compose-foundation:$wearComposeVersion")
-    implementation("androidx.wear.compose:compose-navigation:$wearComposeVersion")
+    // Wear OS specific
+    implementation("androidx.wear.compose:compose-material:1.5.0")
+    implementation("androidx.wear.compose:compose-foundation:1.5.0")
+    implementation("androidx.activity:activity-compose:1.10.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
-    // Core Compose
-    implementation("androidx.activity:activity-compose:1.9.3")
+    // Core Compose via BOM
+    val composeBom = platform("androidx.compose:compose-bom:2026.01.01")
+    implementation(composeBom)
+    implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
 
-    // Standard Android libraries
-    implementation(libs.appcompat)
-    implementation(libs.material)
-
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.ext.junit)
-    androidTestImplementation(libs.espresso.core)
+    // Testing
+    debugImplementation("androidx.compose.ui:ui-tooling")
 }
