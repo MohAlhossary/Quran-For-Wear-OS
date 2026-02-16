@@ -81,7 +81,7 @@ fun QuranMenuItem(entry: QuranListEntry, onClick: () -> Unit) {
         onClick = onClick,
         title = {
             Text(
-                text = if (entry.type == "S") entry.suraName else "Juzz ${entry.jozz}",
+                text = if (entry.type == "S") entry.suraNameEn else "Juzz ${entry.jozz}",
                 color = if (entry.type == "S") Color.Cyan else Color.Yellow
             )
         }
@@ -94,8 +94,8 @@ fun QuranMenuItem(entry: QuranListEntry, onClick: () -> Unit) {
 @Composable
 fun PreviewQuranMenuScreen() {
     val mockData = listOf(
-        QuranListEntry(1, 1, 1, 1, "Al-Fatihah", "الفاتحة", 1, "J", " ‏‏ ‏‏‏‏ ‏‏‏‏‏‏ ‏","بسم الله الرحمن الرحيم"),
-        QuranListEntry(8, 1, 2, 2, "Al-Baqarah", "البقرة", 1, "S", "‏‏ ‏","الم")
+        QuranListEntry(1, 1, 1, 1, 0,0, 1, "J", "Al-Fatihah", "الفاتحة", ),
+        QuranListEntry(8, 1, 2, 2, 0,0, 1, "S", "Al-Baqarah", "البقرة")
     )
     MaterialTheme {
         QuranMenuScreen(mockData)

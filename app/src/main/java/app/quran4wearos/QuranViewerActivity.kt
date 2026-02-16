@@ -95,7 +95,10 @@ class QuranViewerActivity : ComponentActivity() {
                     // TODO placeholder for jump to aya button
 
                     items(entries, key = { it.id }) { entry ->
-                        AyaCard(entry, useEmlaey)
+                        AyaCard(
+                            entry = entry,
+                            useEmlaey = viewModel.useEmlaey
+                        )
                     }
                 }
             }

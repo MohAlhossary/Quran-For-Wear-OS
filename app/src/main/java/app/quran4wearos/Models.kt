@@ -1,22 +1,25 @@
 package app.quran4wearos
+data class SuraName(
+    val no: Int,
+    val nameEn: String,
+    val nameAr: String
+)
 
 data class QuranListEntry(
     val id: Int,
     val jozz: Int,
-    val page: Int,
     val suraNo: Int,
-    val suraName: String,
-    val suraNameAr: String,
+    val page: Int,
+    val lineStart: Int, // Added
+    val lineEnd: Int,   // Added
     val ayaNo: Int,
     val type: String,
-    val text: String? = null,
-    val textEmlaey: String? = null
+    var suraNameEn: String = "",
+    var suraNameAr: String = ""
 )
 
 data class QuranEntry(
     val id: Int,
-    val suraNo: Int,
-    val suraName: String,
     val suraNameAr: String,
     val ayaNo: Int,
     val page: Int,
