@@ -76,8 +76,8 @@ public class QuranFileParser {
                         getInt(t, header, "line_start"), // New
                         getInt(t, header, "line_end"),   // New
                         getInt(t, header, "aya_no"),
-                        getVal(t, header, "type"), "", ""
-                ));
+                        getVal(t, header, "type"),
+                        getVal(t, header, "aya_text_emlaey"), "", ""));
             }
         } catch (Exception e) { e.printStackTrace(); }
         return list;
@@ -101,8 +101,9 @@ public class QuranFileParser {
                         getInt(t, header, "line_end"),   // New
                         getInt(t, header, "aya_no"),
                         "A", // Default type for metadata
-                        "", ""
-                ));
+                        "",
+                        "",
+                        ""));
             }
         } catch (Exception e) { e.printStackTrace(); }
         return map;

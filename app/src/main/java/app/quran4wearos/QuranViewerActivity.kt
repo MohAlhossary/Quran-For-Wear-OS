@@ -150,16 +150,16 @@ fun AyaCard(entry: QuranEntry, useEmlaey: Boolean) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header: Sura Name and Aya Number
-                Text(
-                    text = "${entry.suraNameAr} (${entry.ayaNo})",
-                    style = MaterialTheme.typography.caption2,
-                    color = MaterialTheme.colors.secondary,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
+//                // Header: Sura Name and Aya Number
+//                Text(
+//                    text = "${entry.suraNameAr} (${entry.ayaNo})",
+//                    style = MaterialTheme.typography.caption2,
+//                    color = MaterialTheme.colors.secondary,
+//                    textAlign = TextAlign.Center
+//                )
+//
+//                Spacer(modifier = Modifier.height(4.dp))
+//
                 // Main Quran Text
                 Text(
                     text = textToCopy,

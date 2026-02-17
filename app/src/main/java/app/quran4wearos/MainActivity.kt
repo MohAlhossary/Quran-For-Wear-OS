@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.*
+import app.quran4wearos.ui.theme.HafsRegularFontFamily
+import app.quran4wearos.ui.theme.HafsSmartFontFamily
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -82,11 +84,14 @@ fun QuranMenuItem(entry: QuranListEntry, onClick: () -> Unit) {
         title = {
             Text(
                 text = if (entry.type == "S") entry.suraNameEn else "Juzz ${entry.jozz}",
-                color = if (entry.type == "S") Color.Cyan else Color.Yellow
+                color = if (entry.type == "S") Color.Cyan else Color.Yellow,
+                fontFamily = HafsRegularFontFamily
             )
         }
     ) {
-        Text("Page ${entry.page}", style = MaterialTheme.typography.caption2)
+        if (entry.type == "J") {
+            Text(entry.text, style = MaterialTheme.typography.caption2)
+        }
     }
 }
 
@@ -94,8 +99,8 @@ fun QuranMenuItem(entry: QuranListEntry, onClick: () -> Unit) {
 @Composable
 fun PreviewQuranMenuScreen() {
     val mockData = listOf(
-        QuranListEntry(1, 1, 1, 1, 0,0, 1, "J", "Al-Fatihah", "الفاتحة", ),
-        QuranListEntry(8, 1, 2, 2, 0,0, 1, "S", "Al-Baqarah", "البقرة")
+        QuranListEntry(1, 1, 1, 1, 0, 0, 1, "J", "", "Al-Fatihah", "الفاتحة", ),
+        QuranListEntry(8, 1, 2, 2, 0, 0, 1, "S", "", "Al-Baqarah", "البقرة")
     )
     MaterialTheme {
         QuranMenuScreen(mockData)

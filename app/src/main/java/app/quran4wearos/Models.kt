@@ -14,6 +14,7 @@ data class QuranListEntry(
     val lineEnd: Int,   // Added
     val ayaNo: Int,
     val type: String,
+    val text: String,
     var suraNameEn: String = "",
     var suraNameAr: String = ""
 )
