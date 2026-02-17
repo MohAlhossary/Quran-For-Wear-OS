@@ -38,7 +38,10 @@ class QuranRepository(private val context: Context) {
 
     suspend fun getMetadataById(id: Int): QuranListEntry? = withContext(Dispatchers.IO) {
         ensureLoaded()
-        metadata?.get(id)
+        metadata!![id]
+    }
+    fun getMetadataByIdNotSafe(id: Int): QuranListEntry? {
+        return metadata!![id]
     }
 
     suspend fun getNavigationList(): List<QuranListEntry> = withContext(Dispatchers.IO) {

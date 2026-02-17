@@ -1,10 +1,5 @@
 package app.quran4wearos
 
-// WEAR MATERIAL - UI Components
-
-// WEAR FOUNDATION - The List Logic (Fixes the ambiguity error)
-
-
 import android.content.ClipData
 import android.os.Bundle
 import android.widget.Toast
@@ -17,8 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -36,6 +29,10 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.*
 import app.quran4wearos.ui.theme.HafsSmartFontFamily
 import kotlinx.coroutines.delay
+import kotlin.collections.find
+import kotlin.collections.indexOfFirst
+import kotlin.collections.isNotEmpty
+import kotlin.collections.minByOrNull
 
 
 class QuranViewerActivity : ComponentActivity() {
@@ -48,52 +45,76 @@ class QuranViewerActivity : ComponentActivity() {
             val viewModel: QuranViewModel = viewModel(factory = QuranViewModelFactory(repository))
             val entries by viewModel.displayList.collectAsState()
 
-            // Fixed ambiguity by ensuring foundation import
             val listState = rememberScalingLazyListState()
-            var useEmlaey by remember { mutableStateOf(false) }
 
-            LaunchedEffect(targetAyaId) {
-                if (targetAyaId != -1) viewModel.loadFromAyaId(targetAyaId)
-            }
-
-            LaunchedEffect(entries) {
-                if (targetAyaId != -1 && entries.isNotEmpty()) {
-                    val index = entries.indexOfFirst { it.id == targetAyaId }
-                    if (index != -1) {
-                        delay(100)
-                        listState.animateScrollToItem(index)
-                    }
+            // 1. Detect the current centered entry for the Sura/Juzz indicator
+            val currentCenterEntry by remember(entries, listState) {
+                derivedStateOf {
+                    val visibleItems = listState.layoutInfo.visibleItemsInfo
+                    if (visibleItems.isNotEmpty()) {
+                        // Offset 0 is the center-line in ScalingLazyColumn with autoCentering
+                        val centerItem = visibleItems.minByOrNull { Math.abs(it.offset) }
+                        val key = centerItem?.key
+                        if (key is Int) entries.find { it.id == key } else null
+                    } else null
                 }
             }
 
+            // 2. Load the initial Aya and center it
+            LaunchedEffect(targetAyaId) {
+                if (targetAyaId != -1) {
+                    viewModel.loadFromAyaId(targetAyaId)
+                }
+            }
+
+            // 4. Update adjacent pages as the user scrolls
+            LaunchedEffect(currentCenterEntry?.id) {
+                currentCenterEntry?.id?.let { id ->
+                    viewModel.updateAdjacentPages(id)
+                    }
+            }
+
             Scaffold(
-                timeText = { TimeText() },
-                vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) }
+                timeText = {
+                    // Sura and Juzz Indicator using Curved Text
+                    TimeText(
+                        startCurvedContent = {
+                            currentCenterEntry?.let { entry ->
+                                curvedText("جزء ${repository.getMetadataByIdNotSafe(entry.id)?.jozz}")
+                            }
+                        },
+                        endCurvedContent = {
+                            currentCenterEntry?.let { entry ->
+                                curvedText(entry.suraNameAr)
+                            }
+                        }
+                    )
+                },
+                vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
+                positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
             ) {
                 ScalingLazyColumn(
-                    modifier = Modifier.fillMaxSize(), // Error was here
+                    modifier = Modifier.fillMaxSize(),
                     state = listState,
+                    // AutoCentering ensures the list can scroll far enough to center first/last items
                     autoCentering = AutoCenteringParams(itemIndex = 0)
                 ) {
-                    item {
-                        ToggleChip(
-                            label = { Text("Emlaey Script") },
-                            secondaryLabel = { Text(if (useEmlaey) "On" else "Off") },
-                            checked = useEmlaey,
-                            onCheckedChange = { viewModel.toggleScript() },
-                            // Use named parameters for the Switch to avoid ambiguity
-                            toggleControl = {
-                                Switch(
-                                    checked = useEmlaey,
-                                    onCheckedChange = { viewModel.toggleScript() }
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                    // Header Controls
+//                    item(key = "controls") {
+//                        ToggleChip(
+//                            label = { Text("Emlaey Script") },
+//                            checked = viewModel.useEmlaey,
+//                            onCheckedChange = { viewModel.toggleScript() },
+//                            toggleControl = {
+//                                Switch(checked = viewModel.useEmlaey, onCheckedChange = null)
+//                            },
+//                            modifier = Modifier.fillMaxWidth()
+//                        )
+//                    }
 
                     // TODO placeholder for jump to aya button
 
+                    // Quran Ayas
                     items(entries, key = { it.id }) { entry ->
                         AyaCard(
                             entry = entry,
@@ -111,16 +132,16 @@ class QuranViewerActivity : ComponentActivity() {
 fun AyaCard(entry: QuranEntry, useEmlaey: Boolean) {
     val clipboard = LocalClipboardManager.current
     val haptic = LocalHapticFeedback.current
-    val textToCopy = if (useEmlaey) entry.textEmlaey else entry.text
     val context = LocalContext.current
+    val textToCopy = if (useEmlaey) entry.textEmlaey else entry.text
     // Force RTL for Arabic content
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         Card(
-            onClick = { /* Select Aya logic */ },
+            onClick = { /* Primary action */ },
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
-                    onClick = { /* Primary action */ },
+                    onClick = { /* Secondary action */ },
                     onLongClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         clipboard.setText(AnnotatedString(textToCopy))
@@ -136,6 +157,7 @@ fun AyaCard(entry: QuranEntry, useEmlaey: Boolean) {
                 Text(
                     text = "${entry.suraNameAr} (${entry.ayaNo})",
                     style = MaterialTheme.typography.caption2,
+                    color = MaterialTheme.colors.secondary,
                     textAlign = TextAlign.Center
                 )
 
