@@ -33,6 +33,7 @@ import kotlin.collections.find
 import kotlin.collections.indexOfFirst
 import kotlin.collections.isNotEmpty
 import kotlin.collections.minByOrNull
+import androidx.compose.runtime.collectAsState
 
 
 class QuranViewerActivity : ComponentActivity() {
@@ -44,10 +45,32 @@ class QuranViewerActivity : ComponentActivity() {
             val repository = remember { QuranRepository(applicationContext) }
             val viewModel: QuranViewModel = viewModel(factory = QuranViewModelFactory(repository))
             val entries by viewModel.displayList.collectAsState()
+            val targetIndex by viewModel.targetInitialIndex.collectAsState()
 
+            // Create list state
             val listState = rememberScalingLazyListState()
 
-            // 1. Detect the current centered entry for the Sura/Juzz indicator
+            // Track if we've done the initial positioning
+            var initialPositionDone by remember { mutableStateOf(false) }
+
+            // Load the initial data
+            LaunchedEffect(targetAyaId) {
+                if (targetAyaId != -1) {
+                    viewModel.loadFromAyaId(targetAyaId)
+                }
+            }
+
+            // Position the list at the target item without animation
+            LaunchedEffect(targetIndex, entries, initialPositionDone) {
+                if (targetIndex != -1 && entries.isNotEmpty() && !initialPositionDone) {
+                    // Use scrollToItem instead of animateScrollToItem for instant positioning
+                    listState.scrollToItem(targetIndex)
+                    initialPositionDone = true
+                    viewModel.clearTargetIndex()
+                }
+            }
+
+            // Detect the current centered entry
             val currentCenterEntry by remember(entries, listState) {
                 derivedStateOf {
                     val visibleItems = listState.layoutInfo.visibleItemsInfo
@@ -60,35 +83,26 @@ class QuranViewerActivity : ComponentActivity() {
                 }
             }
 
-            // 2. Load the initial Aya and center it
-            LaunchedEffect(targetAyaId) {
-                if (targetAyaId != -1) {
-                    viewModel.loadFromAyaId(targetAyaId)
-                }
-            }
-
-            // 4. Update adjacent pages as the user scrolls
+            // Update adjacent pages as the user scrolls
             LaunchedEffect(currentCenterEntry?.id) {
                 currentCenterEntry?.id?.let { id ->
                     viewModel.updateAdjacentPages(id)
-                    }
+                }
             }
 
             Scaffold(
                 timeText = {
                     // Sura and Juzz Indicator using Curved Text
-                    TimeText(
-                        startCurvedContent = {
-                            currentCenterEntry?.let { entry ->
+                    currentCenterEntry?.let { entry ->
+                        TimeText(
+                            startCurvedContent = {
                                 curvedText("جزء ${repository.getMetadataByIdNotSafe(entry.id)?.jozz}")
-                            }
-                        },
-                        endCurvedContent = {
-                            currentCenterEntry?.let { entry ->
+                            },
+                            endCurvedContent = {
                                 curvedText(entry.suraNameAr)
                             }
-                        }
-                    )
+                        )
+                    }
                 },
                 vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
                 positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
@@ -96,25 +110,8 @@ class QuranViewerActivity : ComponentActivity() {
                 ScalingLazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     state = listState,
-                    // AutoCentering ensures the list can scroll far enough to center first/last items
                     autoCentering = AutoCenteringParams(itemIndex = 0)
                 ) {
-                    // Header Controls
-//                    item(key = "controls") {
-//                        ToggleChip(
-//                            label = { Text("Emlaey Script") },
-//                            checked = viewModel.useEmlaey,
-//                            onCheckedChange = { viewModel.toggleScript() },
-//                            toggleControl = {
-//                                Switch(checked = viewModel.useEmlaey, onCheckedChange = null)
-//                            },
-//                            modifier = Modifier.fillMaxWidth()
-//                        )
-//                    }
-
-                    // TODO placeholder for jump to aya button
-
-                    // Quran Ayas
                     items(entries, key = { it.id }) { entry ->
                         AyaCard(
                             entry = entry,

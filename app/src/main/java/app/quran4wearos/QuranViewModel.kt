@@ -15,6 +15,10 @@ class QuranViewModel(val repository: QuranRepository) : ViewModel() {
     private val _displayList = MutableStateFlow<List<QuranEntry>>(emptyList())
     val displayList = _displayList.asStateFlow()
 
+    // Add this to track the target index for initial positioning
+    private val _targetInitialIndex = MutableStateFlow(-1)
+    val targetInitialIndex = _targetInitialIndex.asStateFlow()
+
     private val pageCache = mutableMapOf<Int, List<QuranEntry>>()
 
     var currentlyViewedPage = -1
@@ -23,28 +27,34 @@ class QuranViewModel(val repository: QuranRepository) : ViewModel() {
         viewModelScope.launch {
             val entry = repository.getMetadataById(ayaId)
             entry?.let {
-                val targetPage = entry.id
-                val currentPageData = pageCache[targetPage] ?: repository.getPage(targetPage)
-                pageCache[targetPage] = currentPageData
-                println("currentPageData size is ${currentPageData.size}")
+                val targetPage = entry.page
 
-                _displayList.value = currentPageData
-
+                // Load the 3-page window immediately
                 val window = ((targetPage - 1)..(targetPage + 1)).filter { it in 1..604 }
-                window.forEach { p ->
-                    if (!pageCache.containsKey(p)) pageCache[p] = repository.getPage(p)
+                val allEntries = mutableListOf<QuranEntry>()
+
+                for (p in window) {
+                    val pageData = pageCache[p] ?: repository.getPage(p)
+                    pageCache[p] = pageData
+                    allEntries.addAll(pageData)
                 }
-                _displayList.value =
-                    pageCache.filterKeys { it in window }.values.flatten().sortedBy { it.id }
+
+                // Sort all entries
+                val sortedEntries = allEntries.distinctBy { it.id }.sortedBy { it.id }
+                _displayList.value = sortedEntries
+
+                // Find and store the index of the target aya
+                val targetIndex = sortedEntries.indexOfFirst { it.id == ayaId }
+                if (targetIndex != -1) {
+                    _targetInitialIndex.value = targetIndex
+                }
             }
         }
     }
 
-
     var useEmlaey by mutableStateOf(false)
         private set
 
-    // ADD THIS FUNCTION:
     fun toggleScript() {
         println("TOGGLED!!!")
         useEmlaey = !useEmlaey
@@ -58,23 +68,29 @@ class QuranViewModel(val repository: QuranRepository) : ViewModel() {
             if (currentPage != currentlyViewedPage) {
                 currentlyViewedPage = currentPage
 
-                viewModelScope.launch(Dispatchers.IO) {
-                    val range = (currentPage - 1)..(currentPage + 1)
-                    val validatedRange = range.filter { it in 1..604 }
+                val range = (currentPage - 1)..(currentPage + 1)
+                val validatedRange = range.filter { it in 1..604 }
 
-                    val newEntries = mutableListOf<QuranEntry>()
-                    for (p in validatedRange) {
-                        newEntries.addAll(repository.getPage(p))
-                    }
-
-                    // Use distinctBy and sortedBy to ensure the list is clean and ordered
-                    val finalSortedList = newEntries
-                        .distinctBy { it.id }
-                        .sortedBy { it.id }
-
-                    _displayList.value = finalSortedList
+                val newEntries = mutableListOf<QuranEntry>()
+                for (p in validatedRange) {
+                    // Use cached data if available, otherwise load
+                    val pageData = pageCache[p] ?: repository.getPage(p)
+                    pageCache[p] = pageData
+                    newEntries.addAll(pageData)
                 }
+
+                // Ensure the list is clean and ordered
+                val finalSortedList = newEntries
+                    .distinctBy { it.id }
+                    .sortedBy { it.id }
+
+                _displayList.value = finalSortedList
             }
         }
+    }
+
+    // Add this function to clear the target index after use
+    fun clearTargetIndex() {
+        _targetInitialIndex.value = -1
     }
 }
