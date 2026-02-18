@@ -1,14 +1,26 @@
 package app.quran4wearos
 
-import android.content.ClipData
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -26,14 +38,16 @@ import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.wear.compose.material.*
+import androidx.wear.compose.material.Card
+import androidx.wear.compose.material.MaterialTheme
+import androidx.wear.compose.material.PositionIndicator
+import androidx.wear.compose.material.Scaffold
+import androidx.wear.compose.material.Text
+import androidx.wear.compose.material.TimeText
+import androidx.wear.compose.material.Vignette
+import androidx.wear.compose.material.VignettePosition
+import androidx.wear.compose.material.curvedText
 import app.quran4wearos.ui.theme.HafsSmartFontFamily
-import kotlinx.coroutines.delay
-import kotlin.collections.find
-import kotlin.collections.indexOfFirst
-import kotlin.collections.isNotEmpty
-import kotlin.collections.minByOrNull
-import androidx.compose.runtime.collectAsState
 
 
 class QuranViewerActivity : ComponentActivity() {
@@ -113,10 +127,26 @@ class QuranViewerActivity : ComponentActivity() {
                     autoCentering = AutoCenteringParams(itemIndex = 0)
                 ) {
                     items(entries, key = { it.id }) { entry ->
-                        AyaCard(
-                            entry = entry,
-                            useEmlaey = viewModel.useEmlaey
-                        )
+                        if (entry.ayaNo == 1) {
+                            // For first ayah, show SuraCard first, then AyaCard
+                            Column {
+                                SuraCard(
+                                    entry = entry,
+                                    useEmlaey = viewModel.useEmlaey,
+                                    repository.getMetadataByIdNotSafe(entry.id)?.suraNo !in listOf(1, 9) //neither alfatihah nor attawbah
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                AyaCard(
+                                    entry = entry,
+                                    useEmlaey = viewModel.useEmlaey
+                                )
+                            }
+                        } else {
+                            AyaCard(
+                                entry = entry,
+                                useEmlaey = viewModel.useEmlaey
+                            )
+                        }
                     }
                 }
             }
@@ -126,7 +156,11 @@ class QuranViewerActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AyaCard(entry: QuranEntry, useEmlaey: Boolean) {
+fun BaseQuranCard(
+    entry: QuranEntry,
+    useEmlaey: Boolean,
+    content: @Composable ColumnScope.() -> Unit
+) {
     val clipboard = LocalClipboardManager.current
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
@@ -148,30 +182,45 @@ fun AyaCard(entry: QuranEntry, useEmlaey: Boolean) {
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-//                // Header: Sura Name and Aya Number
-//                Text(
-//                    text = "${entry.suraNameAr} (${entry.ayaNo})",
-//                    style = MaterialTheme.typography.caption2,
-//                    color = MaterialTheme.colors.secondary,
-//                    textAlign = TextAlign.Center
-//                )
-//
-//                Spacer(modifier = Modifier.height(4.dp))
-//
-                // Main Quran Text
-                Text(
-                    text = textToCopy,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.body1.copy(
-                        // Ensures punctuation like periods/brackets stay on the left in RTL
-                        textDirection = TextDirection.Rtl
-                    ),
-                    fontFamily = HafsSmartFontFamily,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+                horizontalAlignment = Alignment.CenterHorizontally,
+                content = content
+            )
         }
+    }
+}
+
+@Composable
+fun SuraCard(entry: QuranEntry, useEmlaey: Boolean, addBasmalah: Boolean) {
+    BaseQuranCard(entry = entry, useEmlaey = useEmlaey) {
+        Text(
+            text = "سورة ${entry.suraNameAr}",
+            style = MaterialTheme.typography.caption2,
+            color = MaterialTheme.colors.primary,
+            textAlign = TextAlign.Center
+        )
+
+        if (addBasmalah) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "\u200F\uE8DB \u200F\uE338\u200F\uE48E \u200F\uE338\u200F\uE0AF\u200F\uE238\u200F\uE903 \u200F\uE338\u200F\uE0AF\u200F\uE238\u200F\uE045\u200F\uE1C0\u200F\uE2E5",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.body1.copy(textDirection = TextDirection.Rtl),
+                fontFamily = HafsSmartFontFamily,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+fun AyaCard(entry: QuranEntry, useEmlaey: Boolean) {
+    BaseQuranCard(entry = entry, useEmlaey = useEmlaey) {
+        Text(
+            text = if (useEmlaey) entry.textEmlaey else entry.text,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.body1.copy(textDirection = TextDirection.Rtl),
+            fontFamily = HafsSmartFontFamily,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
