@@ -42,17 +42,38 @@ kotlin {
 
 dependencies {
     // Wear OS specific
-    implementation("androidx.wear.compose:compose-material:1.5.0")
-    implementation("androidx.wear.compose:compose-foundation:1.5.0")
-    implementation("androidx.activity:activity-compose:1.10.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation(libs.compose.material)
+    implementation(libs.compose.foundation)
+    implementation(libs.activity.compose)
+    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.appcompat)
+    implementation(libs.preference)
+    implementation(libs.material)
+
+
+    // Wear Compose
+    implementation(libs.compose.material.v130)
+    implementation(libs.compose.foundation) // Check for the latest version
+
+    // Horologist Compose Layout
+    implementation(libs.horologist.compose.layout)
+    implementation(libs.foundation.layout)
 
     // Core Compose via BOM
     val composeBom = platform("androidx.compose:compose-bom:2026.01.01")
     implementation(composeBom)
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation(libs.ui)
+    implementation(libs.ui.tooling.preview)
 
     // Testing
-    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation(libs.ui.tooling)
+
+    implementation("androidx.wear.compose:compose-material:1.3.1")
+
+    // For Compose Material Slider
+    implementation("androidx.compose.material:material:1.6.1")
+
+    // Make sure you have this for Wear Compose foundation
+    implementation("androidx.wear.compose:compose-foundation:1.3.1")
+
 }

@@ -19,19 +19,34 @@
             android:required="true" />
 
         <activity
-            android:name=".MainActivity"
+            android:name=".EntryPointsActivity"
             android:exported="true"
             android:taskAffinity=""
             android:theme="@style/Theme.QuranForWearOS">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
 
         <activity
             android:name=".QuranViewerActivity"
             android:taskAffinity="" />
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.QuranForWearOS">
+        </activity>
+
+        <activity
+            android:name=".HomescreenActivity"
+            android:exported="true"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
     </application>
 
 </manifest>

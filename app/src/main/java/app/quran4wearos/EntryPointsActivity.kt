@@ -17,10 +17,9 @@ import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.*
 import app.quran4wearos.ui.theme.HafsRegularFontFamily
-import app.quran4wearos.ui.theme.HafsSmartFontFamily
 import kotlinx.coroutines.launch
 
-class MainActivity : ComponentActivity() {
+class EntryPointsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Note: For production, inject this via Dagger/Hilt or use a custom Application class
