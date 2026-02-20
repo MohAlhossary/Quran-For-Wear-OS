@@ -68,12 +68,20 @@ dependencies {
     // Testing
     debugImplementation(libs.ui.tooling)
 
-    implementation("androidx.wear.compose:compose-material:1.3.1")
+    implementation(libs.compose.material.v131)
 
     // For Compose Material Slider
-    implementation("androidx.compose.material:material:1.6.1")
+    implementation(libs.androidx.material)
 
     // Make sure you have this for Wear Compose foundation
-    implementation("androidx.wear.compose:compose-foundation:1.3.1")
+    implementation(libs.androidx.compose.foundation.v131)
+
+    // DataStore for preferences
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.datastore.preferences.core)
+
+    // For lifecycle and viewModel
+    implementation(libs.androidx.lifecycle.viewmodel.compose.v270)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
 
 }

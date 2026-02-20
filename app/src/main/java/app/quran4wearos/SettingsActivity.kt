@@ -30,7 +30,9 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
@@ -55,6 +57,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class SettingsActivity : ComponentActivity() {
 
@@ -78,6 +81,18 @@ fun SettingsScreen(
     // Create a scrollable state for the scrollAway modifier
     val scrollableState = remember { ScrollableState { 0f } }
 
+    // Sample QuranEntry for preview
+    val sampleEntry = remember {
+        QuranEntry(
+            id = 1,
+            suraNameAr = "الفاتحة",
+            ayaNo = 1,
+            page = 1,
+            text = "\u200F\uE8DB \u200F\uE338\u200F\uE48E \u200F\uE338\u200F\uE0AF\u200F\uE238\u200F\uE903 \u200F\uE338\u200F\uE0AF\u200F\uE238\u200F\uE045\u200F\uE1C0\u200F\uE2E5 \u200F\uE95A",
+            textEmlaey = "بسم الله الرحمن الرحيم"
+        )
+    }
+
     // Scaffold for basic Wear OS structure
     Scaffold(
         timeText = { TimeText(modifier = Modifier.scrollAway { scrollableState }) },
@@ -88,7 +103,7 @@ fun SettingsScreen(
 
         ScalingLazyColumn(
             modifier = Modifier.fillMaxSize(),
-            state = listState  // Use 'state' not 'columnState'
+            state = listState
         ) {
             item {
                 ListHeader { Text("Settings", style = MaterialTheme.typography.title2) }
@@ -104,7 +119,7 @@ fun SettingsScreen(
                     onExpandChange = { settingsViewModel.toggleLanguageExpanded() }
                 ) {
                     RadioSettingItem(
-                        icon = R.drawable.ic_watch,
+                        icon = R.drawable.ic_language,
                         title = "English",
                         selected = settingsState.language == "EN",
                         onClick = {
@@ -115,7 +130,7 @@ fun SettingsScreen(
                     )
 
                     RadioSettingItem(
-                        icon = R.drawable.ic_watch,
+                        icon = R.drawable.ic_language,
                         title = "Arabic",
                         selected = settingsState.language == "AR",
                         onClick = {
@@ -133,20 +148,41 @@ fun SettingsScreen(
                     title = "Font Size",
                     value = settingsState.fontSize,
                     onValueChange = { settingsViewModel.setFontSize(it) },
-                    valueRange = 0f..100f
+                    valueRange = 1f..7f
                 )
             }
 
-            // Dark Mode Setting
+            // Preview of AyaCard with current settings
             item {
-                SwitchSettingItem(
-                    icon = R.drawable.ic_dark_mode,
-                    title = "Dark Mode",
-                    isChecked = settingsState.darkMode,
-                    onCheckedChange = { settingsViewModel.toggleDarkMode() }
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "Preview",
+                        style = MaterialTheme.typography.caption2,
+                        color = MaterialTheme.colors.secondary,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
+                    AyaCard(
+                        entry = sampleEntry,
+                        fontSize = (5*settingsState.fontSize).sp,
+                        isDarkMode = settingsState.darkMode,
+                    )
+                }
             }
 
+//            // Dark Mode Setting
+//            item {
+//                SwitchSettingItem(
+//                    icon = R.drawable.ic_dark_mode,
+//                    title = "Dark Mode",
+//                    isChecked = settingsState.darkMode,
+//                    onCheckedChange = { settingsViewModel.toggleDarkMode() }
+//                )
+//            }
         }
     }
 }
@@ -255,7 +291,7 @@ fun ExpandableSettingItem(
     summary: String? = null,
     isExpanded: Boolean,
     onExpandChange: (Boolean) -> Unit,
-    content: @Composable () -> Unit  // Changed to simple composable
+    content: @Composable () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -309,7 +345,6 @@ fun ExpandableSettingItem(
 
             // Expanded content
             if (isExpanded) {
-                // Use a Column with the content directly
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -330,7 +365,7 @@ fun ExpandableSettingRadioButton(
     summary: String? = null,
     isExpanded: Boolean,
     onExpandChange: (Boolean) -> Unit,
-    content: @Composable () -> Unit  // Changed to simple composable
+    content: @Composable () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -384,7 +419,6 @@ fun ExpandableSettingRadioButton(
 
             // Expanded content
             if (isExpanded) {
-                // Use a Column with the content directly
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -404,8 +438,7 @@ fun SliderSettingItem(
     onValueChange: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>
 ) {
-    // Don't wrap in Card, use Chip or just a Column with background
-    Column(
+    Card (
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -413,24 +446,25 @@ fun SliderSettingItem(
                 color = MaterialTheme.colors.surface,
                 shape = MaterialTheme.shapes.small
             )
-            .padding(12.dp)
+            .padding(4.dp),
+        onClick = {}
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.body2,
             modifier = Modifier.padding(bottom = 4.dp)
         )
+
         Text(
-            text = "${value.toInt()}%",
+            text = "${value.toInt()}",
             style = MaterialTheme.typography.title3,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        // Slider with fixed dimensions
         Slider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
-            steps = 9,
+            steps = 15,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
@@ -557,53 +591,110 @@ fun RadioSettingItem(
                 )
             }
 
-            // Radio button indicator
             RadioButton(
                 selected = selected,
-                onClick = onClick, // RadioButton actually handles the click via its own onClick
+                onClick = onClick,
                 modifier = Modifier.size(24.dp)
             )
         }
     }
 }
 
+//// Preview AyaCard - renamed to avoid conflict
+//@Composable
+//fun PreviewAyaCard(
+//    entry: QuranEntry,
+//    fontSize: Float,
+//    isDarkMode: Boolean
+//) {
+//    Card(
+//        modifier = Modifier.fillMaxWidth(),
+//        onClick = { }
+//    ) {
+//        Text(
+//            fontFamily = HafsSmartFontFamily,
+//            text = entry.text,
+//            textAlign = TextAlign.Center,
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(12.dp)
+//                .background(
+//                    color = if (isDarkMode)
+//                        MaterialTheme.colors.surface
+//                    else
+//                        MaterialTheme.colors.primary.copy(alpha = 0.1f)
+//                ),
+//            fontSize = (5 * fontSize).sp,
+//            color = if (isDarkMode)
+//                MaterialTheme.colors.onSurface
+//            else
+//                MaterialTheme.colors.onPrimary
+//        )
+//    }
+//}
 
-// ViewModel
-// ViewModel
+// UPDATED ViewModel with SettingsManager integration
 class SettingsViewModel : ViewModel() {
-    private val _state = MutableStateFlow(SettingsState(
-        darkMode = true,
-        fontSize = 1f,
-        language = "EN",
-        isLanguageExpanded = false
-    ))
+    private val _state = MutableStateFlow(
+        SettingsState(
+            darkMode = SettingsManager.currentSettings.darkMode,
+            fontSize = SettingsManager.currentSettings.fontSize,
+            language = SettingsManager.currentSettings.language,
+            isLanguageExpanded = false
+        )
+    )
     val state: StateFlow<SettingsState> = _state.asStateFlow()
 
+    init {
+        // Listen for changes from SettingsManager
+        viewModelScope.launch {
+            SettingsManager.settings.collect { settings ->
+                _state.update { currentState ->
+                    currentState.copy(
+                        darkMode = settings.darkMode,
+                        fontSize = settings.fontSize,
+                        language = settings.language
+                    )
+                }
+            }
+        }
+    }
+
     fun toggleDarkMode() {
-        _state.update { currentState -> currentState.copy(darkMode = !currentState.darkMode) }
+        SettingsManager.setDarkMode(!_state.value.darkMode)
     }
 
     fun setFontSize(fontSize: Float) {
-        _state.update { currentState -> currentState.copy(fontSize = fontSize) }
+        SettingsManager.setFontSize(fontSize)
     }
 
     fun setLanguage(language: String) {
-        _state.update { currentState -> currentState.copy(language = language) }
+        SettingsManager.setLanguage(language)
     }
 
     fun toggleLanguageExpanded() {
-        _state.update { currentState -> currentState.copy(isLanguageExpanded = !currentState.isLanguageExpanded) }
+        _state.update { currentState ->
+            currentState.copy(isLanguageExpanded = !currentState.isLanguageExpanded)
+        }
     }
 }
 
-// Data class for state
+// Updated data class with display helper
 data class SettingsState(
     val darkMode: Boolean,
     val fontSize: Float,
     val language: String,
     val isLanguageExpanded: Boolean = false
-)
+) {
+    val languageDisplay: String
+        get() = when (language) {
+            "EN" -> "English"
+            "AR" -> "Arabic"
+            else -> language
+        }
+}
 
+// Preview functions
 @OptIn(ExperimentalHorologistApi::class)
 @Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
 @Composable
@@ -617,7 +708,7 @@ fun PreviewExpandableSettingItem() {
         item {
             ExpandableSettingItem(
                 icon = R.drawable.ic_watch,
-                title = "Preview",
+                title = "Font preview",
                 isExpanded = false,
                 onExpandChange = { },
                 content = {
@@ -635,11 +726,10 @@ fun PreviewTest() {
     val listState = rememberScalingLazyListState()
 
     ScalingLazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth(),
         state = listState
     ) {
         item {
-            // Sound settings with nested options
             ExpandableSettingItem(
                 icon = R.drawable.ic_volume,
                 title = "Sound & vibration",
@@ -647,7 +737,9 @@ fun PreviewTest() {
                 isExpanded = true,
                 onExpandChange = {}
             ) {
-                Column {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     SliderSettingItem(
                         title = "Volume",
                         value = 50f,
@@ -668,7 +760,7 @@ fun PreviewTest() {
 }
 
 @Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
-//@OptIn(ExperimentalHorologistApi::class)
+@OptIn(ExperimentalHorologistApi::class)
 @Composable
 fun PreviewSettingsScreen() {
     SettingsScreen()

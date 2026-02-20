@@ -8,6 +8,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
@@ -40,7 +43,6 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Card
 import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
@@ -48,7 +50,6 @@ import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
 import androidx.wear.compose.material.curvedText
 import app.quran4wearos.ui.theme.HafsSmartFontFamily
-
 
 class QuranViewerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,6 +61,14 @@ class QuranViewerActivity : ComponentActivity() {
             val viewModel: QuranViewModel = viewModel(factory = QuranViewModelFactory(repository))
             val entries by viewModel.displayList.collectAsState()
             val targetIndex by viewModel.targetInitialIndex.collectAsState()
+
+            // Get settings from SettingsManager
+            val settings by SettingsManager.settings.collectAsState()
+
+            // Calculate dynamic font size based on settings
+            val fontSizeSp = remember(settings.fontSize) {
+                5.sp * settings.fontSize
+            }
 
             // Create list state
             val listState = rememberScalingLazyListState()
@@ -77,7 +86,6 @@ class QuranViewerActivity : ComponentActivity() {
             // Position the list at the target item without animation
             LaunchedEffect(targetIndex, entries, initialPositionDone) {
                 if (targetIndex != -1 && entries.isNotEmpty() && !initialPositionDone) {
-                    // Use scrollToItem instead of animateScrollToItem for instant positioning
                     listState.scrollToItem(targetIndex)
                     initialPositionDone = true
                     viewModel.clearTargetIndex()
@@ -89,7 +97,6 @@ class QuranViewerActivity : ComponentActivity() {
                 derivedStateOf {
                     val visibleItems = listState.layoutInfo.visibleItemsInfo
                     if (visibleItems.isNotEmpty()) {
-                        // Offset 0 is the center-line in ScalingLazyColumn with autoCentering
                         val centerItem = visibleItems.minByOrNull { Math.abs(it.offset) }
                         val key = centerItem?.key
                         if (key is Int) entries.find { it.id == key } else null
@@ -106,7 +113,6 @@ class QuranViewerActivity : ComponentActivity() {
 
             Scaffold(
                 timeText = {
-                    // Sura and Juzz Indicator using Curved Text
                     currentCenterEntry?.let { entry ->
                         TimeText(
                             startCurvedContent = {
@@ -119,7 +125,7 @@ class QuranViewerActivity : ComponentActivity() {
                     }
                 },
                 vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
-                positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
+//                positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
             ) {
                 ScalingLazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -128,23 +134,26 @@ class QuranViewerActivity : ComponentActivity() {
                 ) {
                     items(entries, key = { it.id }) { entry ->
                         if (entry.ayaNo == 1) {
-                            // For first ayah, show SuraCard first, then AyaCard
                             Column {
                                 SuraCard(
                                     entry = entry,
                                     useEmlaey = viewModel.useEmlaey,
-                                    repository.getMetadataByIdNotSafe(entry.id)?.suraNo !in listOf(1, 9) //neither alfatihah nor attawbah
+                                    repository.getMetadataByIdNotSafe(entry.id)?.suraNo !in listOf(1, 9),
+                                    fontSize = fontSizeSp,
+                                    isDarkMode = settings.darkMode
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 AyaCard(
                                     entry = entry,
-                                    useEmlaey = viewModel.useEmlaey
+                                    fontSize = fontSizeSp,
+                                    isDarkMode = settings.darkMode
                                 )
                             }
                         } else {
                             AyaCard(
                                 entry = entry,
-                                useEmlaey = viewModel.useEmlaey
+                                fontSize = fontSizeSp,
+                                isDarkMode = settings.darkMode
                             )
                         }
                     }
@@ -158,27 +167,45 @@ class QuranViewerActivity : ComponentActivity() {
 @Composable
 fun BaseQuranCard(
     entry: QuranEntry,
-    useEmlaey: Boolean,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    isDarkMode: Boolean,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val clipboard = LocalClipboardManager.current
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
-    val textToCopy = if (useEmlaey) entry.textEmlaey else entry.text
+    val textToCopy = entry.text
+
+    // Apply dark mode to card colors
+    val cardColors = if (isDarkMode) {
+        CardDefaults.cardColors(
+            backgroundColor = MaterialTheme.colors.surface,
+            contentColor = MaterialTheme.colors.onSurface
+        )
+    } else {
+        CardDefaults.cardColors(
+            backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
+            contentColor = MaterialTheme.colors.onPrimary
+        )
+    }
+
     // Force RTL for Arabic content
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         Card(
-            onClick = { /* Primary action */ },
+            onClick = { },
+//            colors = cardColors,
+            contentPadding = PaddingValues(horizontal = 1.dp, vertical = 0.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
-                    onClick = { /* Secondary action */ },
+                    onClick = { },
                     onLongClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         clipboard.setText(AnnotatedString(textToCopy))
                         Toast.makeText(context, "تم النسخ", Toast.LENGTH_SHORT).show()
                     }
                 )
+//                .background(cardColors)
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -190,37 +217,97 @@ fun BaseQuranCard(
 }
 
 @Composable
-fun SuraCard(entry: QuranEntry, useEmlaey: Boolean, addBasmalah: Boolean) {
-    BaseQuranCard(entry = entry, useEmlaey = useEmlaey) {
-        Text(
-            text = "سورة ${entry.suraNameAr}",
-            style = MaterialTheme.typography.caption2,
-            color = MaterialTheme.colors.primary,
-            textAlign = TextAlign.Center
-        )
-
-        if (addBasmalah) {
-            Spacer(modifier = Modifier.height(4.dp))
+fun SuraCard(
+    entry: QuranEntry,
+    useEmlaey: Boolean,
+    addBasmalah: Boolean,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    isDarkMode: Boolean
+) {
+    BaseQuranCard(
+        entry = entry,
+        fontSize = fontSize,
+        isDarkMode = isDarkMode,
+        {
             Text(
-                text = "\u200F\uE8DB \u200F\uE338\u200F\uE48E \u200F\uE338\u200F\uE0AF\u200F\uE238\u200F\uE903 \u200F\uE338\u200F\uE0AF\u200F\uE238\u200F\uE045\u200F\uE1C0\u200F\uE2E5",
+                text = "سورة ${entry.suraNameAr}",
+                style = MaterialTheme.typography.caption2,
+                color = Color.Yellow,
                 textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.body1.copy(textDirection = TextDirection.Rtl),
-                fontFamily = HafsSmartFontFamily,
-                modifier = Modifier.fillMaxWidth()
+                fontSize = fontSize * 1f // Slightly smaller for sura name
             )
+
+            if (addBasmalah) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "\u200F\uE8DB \u200F\uE338\u200F\uE48E \u200F\uE338\u200F\uE0AF\u200F\uE238\u200F\uE903 \u200F\uE338\u200F\uE0AF\u200F\uE238\u200F\uE045\u200F\uE1C0\u200F\uE2E5",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.body1.copy(
+                        textDirection = TextDirection.Rtl,
+                        fontSize = fontSize * 0.8
+                    ),
+                    fontFamily = HafsSmartFontFamily,
+                    color = if (isDarkMode)
+                        MaterialTheme.colors.onSurface
+                    else
+                        MaterialTheme.colors.onPrimary,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
-    }
+    )
 }
 
 @Composable
-fun AyaCard(entry: QuranEntry, useEmlaey: Boolean) {
-    BaseQuranCard(entry = entry, useEmlaey = useEmlaey) {
-        Text(
-            text = if (useEmlaey) entry.textEmlaey else entry.text,
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.body1.copy(textDirection = TextDirection.Rtl),
-            fontFamily = HafsSmartFontFamily,
-            modifier = Modifier.fillMaxWidth()
+fun AyaCard(
+    entry: QuranEntry,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    isDarkMode: Boolean
+) {
+    BaseQuranCard(
+        entry = entry,
+        fontSize = fontSize,
+        isDarkMode = isDarkMode,
+        {
+            Text(
+                text = entry.text,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.body1.copy(
+                    textDirection = TextDirection.Rtl,
+                    fontSize = fontSize,
+                    lineHeight = fontSize * 1.5
+                ),
+                fontFamily = HafsSmartFontFamily,
+                color = if (isDarkMode)
+                    MaterialTheme.colors.onSurface
+                else
+                    MaterialTheme.colors.onPrimary,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    )
+}
+
+// Helper object for Card colors
+object CardDefaults {
+    @Composable
+    fun cardColors(
+        backgroundColor: androidx.compose.ui.graphics.Color,
+        contentColor: androidx.compose.ui.graphics.Color
+    ): CardColors {
+        return CardColors(
+            backgroundColor = backgroundColor,
+            contentColor = contentColor,
+            disabledBackgroundColor = backgroundColor.copy(alpha = 0.5f),
+            disabledContentColor = contentColor.copy(alpha = 0.5f)
         )
     }
 }
+
+// Simple CardColors data class
+data class CardColors(
+    val backgroundColor: androidx.compose.ui.graphics.Color,
+    val contentColor: androidx.compose.ui.graphics.Color,
+    val disabledBackgroundColor: androidx.compose.ui.graphics.Color,
+    val disabledContentColor: androidx.compose.ui.graphics.Color
+)
