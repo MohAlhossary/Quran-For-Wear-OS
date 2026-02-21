@@ -17,8 +17,8 @@ extensions.configure<ApplicationExtension> {
         applicationId = "app.quran4wearos"
         minSdk = 30
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.1.0"
+        versionCode = 5
+        versionName = "1.1.1"
     }
 
     compileOptions {

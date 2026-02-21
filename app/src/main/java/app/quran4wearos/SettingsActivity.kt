@@ -113,7 +113,7 @@ fun SettingsScreen(
             item {
                 ExpandableSettingRadioButton(
                     icon = R.drawable.ic_language,
-                    title = "Language",
+                    title = "Language ",
                     summary = settingsState.language,
                     isExpanded = settingsState.isLanguageExpanded,
                     onExpandChange = { settingsViewModel.toggleLanguageExpanded() }

@@ -91,7 +91,7 @@ class SettingsDataStore(private val context: Context) {
         return context.dataStore.data.map { preferences ->
             SettingsData(
                 darkMode = preferences[DARK_MODE] ?: true,
-                fontSize = preferences[FONT_SIZE] ?: 1f,
+                fontSize = preferences[FONT_SIZE] ?: 3f,
                 language = preferences[LANGUAGE] ?: "EN"
             )
         }
