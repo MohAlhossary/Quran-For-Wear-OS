@@ -2,22 +2,17 @@
 
 # Quran for Wear OS
 
-This repository contains the code of **Quran4WearOS**, the only opensource Quran app for Android smartwatches.
+This repository contains the code of **Quran4WearOS**, the only open source Quran app for Android smartwatches.
 
 
 ## Some Screenshots
-![Screenshot_20260217_122536.png](images/Screenshot_20260217_122536.png)
-![Screenshot_20260217_122551.png](images/Screenshot_20260217_122551.png)
-![Screenshot_20260217_122629.png](images/Screenshot_20260217_122629.png)
-![Screenshot_20260217_122701.png](images/Screenshot_20260217_122701.png)
-![Screenshot_20260217_122732.png](images/Screenshot_20260217_122732.png)
-![Screenshot_20260217_122822.png](images/Screenshot_20260217_122822.png)
-![Screenshot_20260217_131910.png](images/Screenshot_20260217_131910.png)
-![Screenshot_20260217_132208.png](images/Screenshot_20260217_132208.png)
-![Screenshot_20260219_062027.png](images/Screenshot_20260219_062027.png)
-![Screenshot_20260219_062209.png](images/Screenshot_20260219_062209.png)
-![Screenshot_20260219_062458.png](images/Screenshot_20260219_062458.png)
-![Screenshot_20260219_062742.png](images/Screenshot_20260219_062742.png)
+<img src="images/ScreenShots1.png" alt="Screenshots">
+<img src="images/ScreenShots2.png" alt="More Screenshots">
+
+## How to install
+
+[Installation Guide](install-en.md)
+[دليل التثبيت](install-ar.md)
 
 ## Official Website
 https://quran4wearos.app/
