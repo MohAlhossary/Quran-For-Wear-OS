@@ -11,8 +11,8 @@ This repository contains the code of **Quran4WearOS**, the only open source Qura
 
 ## How to install
 
-[Installation Guide](install-en.md)
-[دليل التثبيت](install-ar.md)
+[Installation Guide](install-EN.md)
+[دليل التثبيت](install-AR.md)
 
 ## Official Website
 https://quran4wearos.app/

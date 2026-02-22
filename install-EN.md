@@ -1,4 +1,4 @@
-للغة العربية اضغط [هنا](install-ar.md)
+للغة العربية اضغط [هنا](install-AR.md)
 # Quran For Wear OS Installaton Guide
 
 Our application is not yet public on the Google Play Store, so to get it right now, you have to join the beta testing program and become a beta tester.
