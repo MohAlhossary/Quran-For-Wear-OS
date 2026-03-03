@@ -100,11 +100,12 @@ class SettingsDataStore(private val context: Context) {
     }
 
     suspend fun loadSettings(): kotlinx.coroutines.flow.Flow<SettingsData> {
+        val defaults = getDefaultSettingsFlow()
         return context.dataStore.data.map { preferences ->
             SettingsData(
-                darkMode = preferences[DARK_MODE] ?: true,
-                fontSize = preferences[FONT_SIZE] ?: 15,
-                language = preferences[LANGUAGE] ?: "EN"
+                darkMode = preferences[DARK_MODE] ?: defaults.value.darkMode,
+                fontSize = preferences[FONT_SIZE]?.toInt() ?: defaults.value.fontSize,
+                language = preferences[LANGUAGE] ?: defaults.value.language
             )
         }
     }

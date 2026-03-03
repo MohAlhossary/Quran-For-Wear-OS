@@ -26,20 +26,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDirection
-import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -65,6 +61,7 @@ import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
+import androidx.wear.tooling.preview.devices.WearDevices
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.layout.scrollAway
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -100,7 +97,7 @@ fun getStringInLanguage(@StringRes id: Int, languageCode: String): String {
     val context = LocalContext.current
     return remember(languageCode, id) {
         val configuration = Configuration(context.resources.configuration)
-        configuration.setLocale(Locale(languageCode))
+        configuration.setLocale(Locale.forLanguageTag(languageCode))
         context.createConfigurationContext(configuration).resources.getString(id)
     }
 }
@@ -216,7 +213,7 @@ fun SettingsScreen(
             item {
                 IntegerSliderSettingItem(
                     title = getStringInLanguage(R.string.settings_font_size, currentLanguageCode),
-                    value = settingsState.fontSize.toInt(),
+                    value = settingsState.fontSize,
                     onValueChange = { settingsViewModel.setFontSize(it) },
                     valueRange = 5..35
                 )
@@ -260,12 +257,12 @@ fun SettingsScreen(
 // Helper function to apply locale changes
 fun applyLocale(context: android.content.Context, languageCode: String) {
     val locale = when (languageCode) {
-        "AR" -> Locale("ar")
-        "EN" -> Locale("en")
+        "AR" -> Locale.forLanguageTag("ar")
+        "EN" -> Locale.forLanguageTag("en")
         else -> {
             // For device default, use the system locale
             val deviceLang = getDeviceDefaultLanguage()
-            if (deviceLang == "AR") Locale("ar") else Locale("en")
+            if (deviceLang == "AR") Locale.forLanguageTag("ar") else Locale.forLanguageTag("en")
         }
     }
 
@@ -711,7 +708,7 @@ fun RadioSettingItem(
 // Helper function to get device default language
 fun getDeviceDefaultLanguage(): String {
     val deviceLanguage = Locale.getDefault().language
-    println("Device language = ${deviceLanguage}")
+    println("Device language = $deviceLanguage")
     return when {
         deviceLanguage.equals("ar", ignoreCase = true) -> "AR"
         else -> "EN"
@@ -812,7 +809,7 @@ data class SettingsState(
 
 // Preview functions
 @OptIn(ExperimentalHorologistApi::class)
-@Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
 @Composable
 fun PreviewExpandableSettingItem() {
     val listState = rememberScalingLazyListState()
@@ -835,7 +832,7 @@ fun PreviewExpandableSettingItem() {
     }
 }
 
-@Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
 @OptIn(ExperimentalHorologistApi::class)
 @Composable
 fun PreviewTest() {
@@ -875,7 +872,7 @@ fun PreviewTest() {
     }
 }
 
-@Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
 @OptIn(ExperimentalHorologistApi::class)
 @Composable
 fun PreviewSettingsScreen() {

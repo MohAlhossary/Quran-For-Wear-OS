@@ -59,6 +59,7 @@ dependencies {
     // Horologist Compose Layout
     implementation(libs.horologist.compose.layout)
     implementation(libs.foundation.layout)
+    implementation(libs.androidx.wear.tooling.preview)
 
     // Core Compose via BOM
     val composeBom = platform("androidx.compose:compose-bom:2026.01.01")

@@ -39,6 +39,7 @@ import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.TitleCard
+import androidx.wear.tooling.preview.devices.WearDevices
 import app.quran4wearos.ui.theme.HafsRegularFontFamily
 import kotlinx.coroutines.launch
 
@@ -162,7 +163,7 @@ fun QuranMenuItem(entry: QuranListEntry, onClick: () -> Unit) {
         }    }
 }
 
-@Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
 @Composable
 fun PreviewQuranMenuScreen() {
     val mockData = listOf(
