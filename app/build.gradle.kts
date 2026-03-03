@@ -47,6 +47,7 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.appcompat)
+    implementation(libs.androidx.appcompat.v130)
     implementation(libs.preference)
     implementation(libs.material)
 

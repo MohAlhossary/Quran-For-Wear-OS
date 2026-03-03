@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">القرآن</string>
+    <string name="homescreen_title">القرآن الكريم</string>
+    <string name="homescreen_settings">القرآن الكريم</string>
+    <string name="homescreen_quran">الإعدادات</string>
+    <string name="entrypoints_juz">الجزء</string>
+    <string name="entrypoints_sura">سورة</string>
+    <string name="settings_title">إعدادات</string>
+    <string name="settings_font">حجم الخط</string>
+    <string name="settings_preview">المعاينة</string>
+    <string name="settings_language">اللغة</string>
+    <string name="settings_dark_mode">الوضع الداكن</string>
+    <string name="english">الإنجليزية</string>
+    <string name="arabic">العربية</string>
+    <string name="device_default">إعدادات الجهاز</string>
+    <string name="settings_font_size">حجم الخط</string>
+    <string name="screen_timeout">مهلة الشاشة</string>
+    <string name="cancel">إلغاء</string>
+    <string name="about">حول</string>
+    <string name="ok">موافق</string>
+    <string name="wear_os_watch">ساعة Wear OS</string>
+    <string name="model">الطراز: WEAR-001</string>
+    <string name="os_version">إصدار النظام: Wear OS 4.0</string>
+    <string name="build">البناء: AP1A.240505.001</string>
+    <string name="timeout_15_seconds">٣٠ ثانية</string>
+    <string name="timeout_30_seconds">١٥ ثانية</string>
+    <string name="timeout_1_minute">دقيقة واحدة</string>
+    <string name="timeout_2_minutes">دقيقتان</string>
+    <string name="timeout_5_minutes">٥ دقائق</string>
+</resources>

@@ -1,9 +1,13 @@
 // Main Settings Activity
 package app.quran4wearos
 
+import android.content.res.Configuration
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.layout.Arrangement
@@ -19,18 +23,28 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Slider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,6 +72,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 class SettingsActivity : ComponentActivity() {
 
@@ -65,8 +80,28 @@ class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            SettingsScreen()
+            val language = SettingsManager.settings.collectAsState().value.language
+
+            CompositionLocalProvider(
+                LocalLayoutDirection provides when (language) {
+                    "AR" -> LayoutDirection.Rtl
+                    else -> LayoutDirection.Ltr
+                },
+            ) {
+                SettingsScreen()
+            }
         }
+    }
+}
+
+// Helper function to get string in a specific language
+@Composable
+fun getStringInLanguage(@StringRes id: Int, languageCode: String): String {
+    val context = LocalContext.current
+    return remember(languageCode, id) {
+        val configuration = Configuration(context.resources.configuration)
+        configuration.setLocale(Locale(languageCode))
+        context.createConfigurationContext(configuration).resources.getString(id)
     }
 }
 
@@ -77,6 +112,7 @@ fun SettingsScreen(
     settingsViewModel: SettingsViewModel = viewModel()
 ) {
     val settingsState: SettingsState by settingsViewModel.state.collectAsState()
+    val context = LocalContext.current
 
     // Create a scrollable state for the scrollAway modifier
     val scrollableState = remember { ScrollableState { 0f } }
@@ -93,6 +129,18 @@ fun SettingsScreen(
         )
     }
 
+    // Determine current language code for string resources
+    val currentLanguageCode = remember(settingsState.language) {
+        when (settingsState.language) {
+            "AR" -> "ar"
+            "EN" -> "en"
+            else -> {
+                val deviceLang = getDeviceDefaultLanguage()
+                if (deviceLang == "AR") "ar" else "en"
+            }
+        }
+    }
+
     // Scaffold for basic Wear OS structure
     Scaffold(
         timeText = { TimeText(modifier = Modifier.scrollAway { scrollableState }) },
@@ -106,49 +154,71 @@ fun SettingsScreen(
             state = listState
         ) {
             item {
-                ListHeader { Text("Settings", style = MaterialTheme.typography.title2) }
+                ListHeader {
+                    Text(
+                        getStringInLanguage(R.string.settings_title, currentLanguageCode),
+                        style = MaterialTheme.typography.title2
+                    )
+                }
             }
 
             // Language Setting with Expandable Radio Buttons
             item {
                 ExpandableSettingRadioButton(
                     icon = R.drawable.ic_language,
-                    title = "Language ",
-                    summary = settingsState.language,
+                    title = getStringInLanguage(R.string.settings_language, currentLanguageCode),
+                    summary = settingsState.languageDisplay,
                     isExpanded = settingsState.isLanguageExpanded,
                     onExpandChange = { settingsViewModel.toggleLanguageExpanded() }
                 ) {
                     RadioSettingItem(
                         icon = R.drawable.ic_language,
-                        title = "English",
+                        title = getStringInLanguage(R.string.english, currentLanguageCode),
                         selected = settingsState.language == "EN",
                         onClick = {
                             settingsViewModel.setLanguage("EN")
                             settingsViewModel.toggleLanguageExpanded()
+                            // Apply locale change
+                            applyLocale(context, "EN")
                         },
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
 
                     RadioSettingItem(
                         icon = R.drawable.ic_language,
-                        title = "Arabic",
+                        title = getStringInLanguage(R.string.arabic, currentLanguageCode),
                         selected = settingsState.language == "AR",
                         onClick = {
                             settingsViewModel.setLanguage("AR")
                             settingsViewModel.toggleLanguageExpanded()
+                            // Apply locale change
+                            applyLocale(context, "AR")
+                        },
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
+                    RadioSettingItem(
+                        icon = R.drawable.ic_language,
+                        title = getStringInLanguage(R.string.device_default, currentLanguageCode),
+                        selected = settingsState.language == "DEFAULT",
+                        onClick = {
+                            settingsViewModel.setLanguage("DEFAULT")
+                            settingsViewModel.toggleLanguageExpanded()
+                            // Apply locale change (device default)
+                            applyLocale(context, "DEFAULT")
                         },
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }
             }
 
-            // Font Size Setting with Slider
+            // Font Size Setting with Integer Slider
             item {
-                SliderSettingItem(
-                    title = "Font Size",
-                    value = settingsState.fontSize,
+                IntegerSliderSettingItem(
+                    title = getStringInLanguage(R.string.settings_font_size, currentLanguageCode),
+                    value = settingsState.fontSize.toInt(),
                     onValueChange = { settingsViewModel.setFontSize(it) },
-                    valueRange = 1f..7f
+                    valueRange = 5..35
                 )
             }
 
@@ -160,7 +230,7 @@ fun SettingsScreen(
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "Preview",
+                        text = getStringInLanguage(R.string.settings_preview, currentLanguageCode),
                         style = MaterialTheme.typography.caption2,
                         color = MaterialTheme.colors.secondary,
                         modifier = Modifier.padding(bottom = 4.dp)
@@ -168,7 +238,7 @@ fun SettingsScreen(
 
                     AyaCard(
                         entry = sampleEntry,
-                        fontSize = (5*settingsState.fontSize).sp,
+                        fontSize = (settingsState.fontSize).sp,
                         isDarkMode = settingsState.darkMode,
                     )
                 }
@@ -178,13 +248,30 @@ fun SettingsScreen(
 //            item {
 //                SwitchSettingItem(
 //                    icon = R.drawable.ic_dark_mode,
-//                    title = "Dark Mode",
+//                    title = getStringInLanguage(R.string.settings_dark_mode, currentLanguageCode),
 //                    isChecked = settingsState.darkMode,
 //                    onCheckedChange = { settingsViewModel.toggleDarkMode() }
 //                )
 //            }
         }
     }
+}
+
+// Helper function to apply locale changes
+fun applyLocale(context: android.content.Context, languageCode: String) {
+    val locale = when (languageCode) {
+        "AR" -> Locale("ar")
+        "EN" -> Locale("en")
+        else -> {
+            // For device default, use the system locale
+            val deviceLang = getDeviceDefaultLanguage()
+            if (deviceLang == "AR") Locale("ar") else Locale("en")
+        }
+    }
+
+    // Set the application locale using LocaleListCompat
+    val localeList = LocaleListCompat.create(locale)
+    AppCompatDelegate.setApplicationLocales(localeList)
 }
 
 // Custom Setting Items
@@ -431,14 +518,17 @@ fun ExpandableSettingRadioButton(
     }
 }
 
+// Integer Slider Setting Item
 @Composable
-fun SliderSettingItem(
+fun IntegerSliderSettingItem(
     title: String,
-    value: Float,
-    onValueChange: (Float) -> Unit,
-    valueRange: ClosedFloatingPointRange<Float>
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    valueRange: IntRange
 ) {
-    Card (
+    var sliderValue by remember { mutableIntStateOf(value) }
+
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -449,26 +539,31 @@ fun SliderSettingItem(
             .padding(4.dp),
         onClick = {}
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.body2,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
+        Column {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.body2,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
 
-        Text(
-            text = "${value.toInt()}",
-            style = MaterialTheme.typography.title3,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = valueRange,
-            steps = 15,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-        )
+            Text(
+                text = "$sliderValue",
+                style = MaterialTheme.typography.title3,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Slider(
+                value = sliderValue.toFloat(),
+                onValueChange = {
+                    sliderValue = it.toInt()
+                    onValueChange(sliderValue)
+                },
+                valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
+                steps = valueRange.last - valueRange.first - 1,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            )
+        }
     }
 }
 
@@ -479,11 +574,20 @@ fun ScreenTimeoutDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    val timeouts = listOf("15 seconds", "30 seconds", "1 minute", "2 minutes", "5 minutes")
+    val context = LocalContext.current
+    val currentLanguageCode = remember { "en" } // You might want to get this from settings
+
+    val timeouts = listOf(
+        getStringInLanguage(R.string.timeout_15_seconds, currentLanguageCode),
+        getStringInLanguage(R.string.timeout_30_seconds, currentLanguageCode),
+        getStringInLanguage(R.string.timeout_1_minute, currentLanguageCode),
+        getStringInLanguage(R.string.timeout_2_minutes, currentLanguageCode),
+        getStringInLanguage(R.string.timeout_5_minutes, currentLanguageCode)
+    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Screen timeout") },
+        title = { Text(getStringInLanguage(R.string.screen_timeout, currentLanguageCode)) },
         text = {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth()
@@ -501,7 +605,7 @@ fun ScreenTimeoutDialog(
         },
         confirmButton = {
             Button(onClick = onDismiss) {
-                Text("Cancel")
+                Text(getStringInLanguage(R.string.cancel, currentLanguageCode))
             }
         }
     )
@@ -511,9 +615,12 @@ fun ScreenTimeoutDialog(
 fun AboutDialog(
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
+    val currentLanguageCode = remember { SettingsManager.settings.value.language } // You might want to get this from settings
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("About") },
+        title = { Text(getStringInLanguage(R.string.about, currentLanguageCode)) },
         text = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -527,22 +634,22 @@ fun AboutDialog(
                         .padding(bottom = 8.dp)
                 )
                 Text(
-                    text = "Wear OS Watch",
+                    text = getStringInLanguage(R.string.wear_os_watch, currentLanguageCode),
                     style = MaterialTheme.typography.title2,
                     color = Color.Black
                 )
                 Text(
-                    text = "Model: WEAR-001",
+                    text = getStringInLanguage(R.string.model, currentLanguageCode),
                     style = MaterialTheme.typography.body2,
                     color = Color.Black
                 )
                 Text(
-                    text = "OS Version: Wear OS 4.0",
+                    text = getStringInLanguage(R.string.os_version, currentLanguageCode),
                     style = MaterialTheme.typography.body2,
                     color = Color.Black
                 )
                 Text(
-                    text = "Build: AP1A.240505.001",
+                    text = getStringInLanguage(R.string.build, currentLanguageCode),
                     style = MaterialTheme.typography.body2,
                     color = Color.Black
                 )
@@ -550,7 +657,7 @@ fun AboutDialog(
         },
         confirmButton = {
             Button(onClick = onDismiss) {
-                Text("OK")
+                Text(getStringInLanguage(R.string.ok, currentLanguageCode))
             }
         }
     )
@@ -600,60 +707,44 @@ fun RadioSettingItem(
     }
 }
 
-//// Preview AyaCard - renamed to avoid conflict
-//@Composable
-//fun PreviewAyaCard(
-//    entry: QuranEntry,
-//    fontSize: Float,
-//    isDarkMode: Boolean
-//) {
-//    Card(
-//        modifier = Modifier.fillMaxWidth(),
-//        onClick = { }
-//    ) {
-//        Text(
-//            fontFamily = HafsSmartFontFamily,
-//            text = entry.text,
-//            textAlign = TextAlign.Center,
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(12.dp)
-//                .background(
-//                    color = if (isDarkMode)
-//                        MaterialTheme.colors.surface
-//                    else
-//                        MaterialTheme.colors.primary.copy(alpha = 0.1f)
-//                ),
-//            fontSize = (5 * fontSize).sp,
-//            color = if (isDarkMode)
-//                MaterialTheme.colors.onSurface
-//            else
-//                MaterialTheme.colors.onPrimary
-//        )
-//    }
-//}
 
-// UPDATED ViewModel with SettingsManager integration
+// Helper function to get device default language
+fun getDeviceDefaultLanguage(): String {
+    val deviceLanguage = Locale.getDefault().language
+    println("Device language = ${deviceLanguage}")
+    return when {
+        deviceLanguage.equals("ar", ignoreCase = true) -> "AR"
+        else -> "EN"
+    }
+}
+
+// UPDATED ViewModel with SettingsManager integration and device default language fallback
 class SettingsViewModel : ViewModel() {
     private val _state = MutableStateFlow(
         SettingsState(
             darkMode = SettingsManager.currentSettings.darkMode,
             fontSize = SettingsManager.currentSettings.fontSize,
-            language = SettingsManager.currentSettings.language,
+            language = SettingsManager.currentSettings.language.ifEmpty { "DEFAULT" },
             isLanguageExpanded = false
         )
     )
     val state: StateFlow<SettingsState> = _state.asStateFlow()
 
     init {
-        // Listen for changes from SettingsManager
+        viewModelScope.launch {
+            if (SettingsManager.currentSettings.language.isEmpty()) {
+                val deviceDefaultLanguage = getDeviceDefaultLanguage()
+                SettingsManager.setLanguage(deviceDefaultLanguage)
+            }
+        }
+
         viewModelScope.launch {
             SettingsManager.settings.collect { settings ->
                 _state.update { currentState ->
                     currentState.copy(
                         darkMode = settings.darkMode,
                         fontSize = settings.fontSize,
-                        language = settings.language
+                        language = settings.language.ifEmpty { "DEFAULT" }
                     )
                 }
             }
@@ -664,12 +755,17 @@ class SettingsViewModel : ViewModel() {
         SettingsManager.setDarkMode(!_state.value.darkMode)
     }
 
-    fun setFontSize(fontSize: Float) {
+    fun setFontSize(fontSize: Int) {
         SettingsManager.setFontSize(fontSize)
     }
 
     fun setLanguage(language: String) {
-        SettingsManager.setLanguage(language)
+        val languageToSet = if (language == "DEFAULT") {
+            getDeviceDefaultLanguage()
+        } else {
+            language
+        }
+        SettingsManager.setLanguage(languageToSet)
     }
 
     fun toggleLanguageExpanded() {
@@ -679,18 +775,38 @@ class SettingsViewModel : ViewModel() {
     }
 }
 
-// Updated data class with display helper
+// UPDATED data class with display helper using getStringInLanguage
 data class SettingsState(
     val darkMode: Boolean,
-    val fontSize: Float,
+    val fontSize: Int,
     val language: String,
     val isLanguageExpanded: Boolean = false
 ) {
     val languageDisplay: String
-        get() = when (language) {
-            "EN" -> "English"
-            "AR" -> "Arabic"
-            else -> language
+        @Composable
+        get() {
+            val currentLanguageCode = when (language) {
+                "AR" -> "ar"
+                "EN" -> "en"
+                else -> {
+                    val deviceLang = getDeviceDefaultLanguage()
+                    if (deviceLang == "AR") "ar" else "en"
+                }
+            }
+
+            return when (language) {
+                "EN" -> getStringInLanguage(R.string.english, currentLanguageCode)
+                "AR" -> getStringInLanguage(R.string.arabic, currentLanguageCode)
+                "DEFAULT" -> {
+                    val deviceLang = getDeviceDefaultLanguage()
+                    val deviceLangDisplay = if (deviceLang == "AR")
+                        getStringInLanguage(R.string.arabic, currentLanguageCode)
+                    else
+                        getStringInLanguage(R.string.english, currentLanguageCode)
+                    "${getStringInLanguage(R.string.device_default, currentLanguageCode)} ($deviceLangDisplay)"
+                }
+                else -> language
+            }
         }
 }
 
@@ -740,11 +856,11 @@ fun PreviewTest() {
                 Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    SliderSettingItem(
+                    IntegerSliderSettingItem(
                         title = "Volume",
-                        value = 50f,
+                        value = 50,
                         onValueChange = {},
-                        valueRange = 0f..100f
+                        valueRange = 0..100
                     )
 
                     SwitchSettingItem(
@@ -765,3 +881,12 @@ fun PreviewTest() {
 fun PreviewSettingsScreen() {
     SettingsScreen()
 }
+
+//@Preview(showSystemUi = true, uiMode = UI_MODE_NIGHT_YES)
+//@Composable
+//fun previewAyaCard() {
+//    AyaCard(
+//        QuranEntry(),
+//        c
+//    )
+//}

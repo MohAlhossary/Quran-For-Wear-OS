@@ -1,19 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Quran for Wear OS</string>
-    <string name="title_activity_settings">SettingsActivity</string>
-
-    <!-- Preference Titles -->
-    <string name="messages_header">Messages</string>
-    <string name="sync_header">Sync</string>
-
-    <!-- Messages Preferences -->
-    <string name="signature_title">Your signature</string>
-    <string name="reply_title">Default reply action</string>
-
-    <!-- Sync Preferences -->
-    <string name="sync_title">Sync email periodically</string>
-    <string name="attachment_title">Download incoming attachments</string>
-    <string name="attachment_summary_on">Automatically download attachments for incoming emails
-    </string>
-    <string name="attachment_summary_off">Only download attachments when manually requested</string>
+    <string name="app_name">Quran</string>
+    <string name="homescreen_title">Quran for Wear OS</string>
+    <string name="homescreen_settings">Quran</string>
+    <string name="homescreen_quran">Settings</string>
+    <string name="entrypoints_juz">Juzz</string>
+    <string name="entrypoints_sura">Sura</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_font">Font</string>
+    <string name="settings_preview">Preview</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_dark_mode">Dark Mode</string>
+    <string name="settings_font_size">Font Size</string>
+    <string name="english">English</string>
+    <string name="arabic">Arabic</string>
+    <string name="device_default">Device Default</string>
+    <string name="screen_timeout">Screen timeout</string>
+    <string name="cancel">Cancel</string>
+    <string name="about">About</string>
+    <string name="ok">OK</string>
+    <string name="wear_os_watch">Wear OS Watch</string>
+    <string name="model">Model: WEAR-001</string>
+    <string name="os_version">OS Version: Wear OS 4.0</string>
+    <string name="build">Build: AP1A.240505.001</string>
+    <string name="timeout_15_seconds">30 seconds</string>
+    <string name="timeout_30_seconds">15 seconds</string>
+    <string name="timeout_1_minute">1 minute</string>
+    <string name="timeout_2_minutes">2 minutes</string>
+    <string name="timeout_5_minutes">5 minutes</string>
 </resources>

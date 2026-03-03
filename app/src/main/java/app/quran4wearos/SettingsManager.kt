@@ -2,9 +2,11 @@
 package app.quran4wearos
 
 import android.content.Context
+import androidx.compose.runtime.mutableStateOf
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.CoroutineScope
@@ -22,11 +24,7 @@ val Context.dataStore by preferencesDataStore(name = "quran_settings")
 
 object SettingsManager {
     private lateinit var dataStore: SettingsDataStore
-    private val _settings = MutableStateFlow(SettingsData(
-        darkMode = true,
-        fontSize = 1f,
-        language = "EN"
-    ))
+    private val _settings = getDefaultSettingsFlow()
     val settings: StateFlow<SettingsData> = _settings.asStateFlow()
 
     // Create a dedicated coroutine scope for SettingsManager
@@ -39,11 +37,17 @@ object SettingsManager {
     fun initialize(context: Context) {
         dataStore = SettingsDataStore(context)
 
-        // Load saved settings
-        managerScope.launch {
-            dataStore.loadSettings().collect { savedSettings ->
-                _settings.value = savedSettings
+        try {
+            // Load saved settings
+            managerScope.launch {
+                dataStore.loadSettings().collect { savedSettings ->
+                    _settings.value = savedSettings
+                }
             }
+        //TODO remove,this is because a user who saved a float value would not be able to load
+        // their  settings because they are float, please remove after next release
+        } catch (_ : ClassCastException) {
+            _settings.value = getDefaultSettingsFlow().value
         }
     }
 
@@ -54,7 +58,7 @@ object SettingsManager {
         }
     }
 
-    fun setFontSize(size: Float) {
+    fun setFontSize(size: Int) {
         _settings.update { it.copy(fontSize = size) }
         managerScope.launch {
             dataStore.setFontSize(size)
@@ -74,16 +78,24 @@ object SettingsManager {
     }
 }
 
+private fun getDefaultSettingsFlow(): MutableStateFlow<SettingsData> = MutableStateFlow(
+    SettingsData(
+        darkMode = true,
+        fontSize = 15,
+        language = "EN"
+    )
+)
+
 data class SettingsData(
     val darkMode: Boolean,
-    val fontSize: Float,
+    val fontSize: Int,
     val language: String
 )
 
 class SettingsDataStore(private val context: Context) {
     companion object {
         val DARK_MODE = booleanPreferencesKey("dark_mode")
-        val FONT_SIZE = floatPreferencesKey("font_size")
+        val FONT_SIZE = intPreferencesKey("font_size")
         val LANGUAGE = stringPreferencesKey("language")
     }
 
@@ -91,7 +103,7 @@ class SettingsDataStore(private val context: Context) {
         return context.dataStore.data.map { preferences ->
             SettingsData(
                 darkMode = preferences[DARK_MODE] ?: true,
-                fontSize = preferences[FONT_SIZE] ?: 3f,
+                fontSize = preferences[FONT_SIZE] ?: 15,
                 language = preferences[LANGUAGE] ?: "EN"
             )
         }
@@ -103,7 +115,7 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
-    suspend fun setFontSize(size: Float) {
+    suspend fun setFontSize(size: Int) {
         context.dataStore.edit { preferences ->
             preferences[FONT_SIZE] = size
         }

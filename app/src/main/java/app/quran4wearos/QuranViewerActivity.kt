@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -25,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -50,8 +52,13 @@ import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
 import androidx.wear.compose.material.curvedText
 import app.quran4wearos.ui.theme.HafsSmartFontFamily
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.tooling.preview.Preview
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 
 class QuranViewerActivity : ComponentActivity() {
+    private var currentPage: Int = -1
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val targetAyaId = intent.getIntExtra("EXTRA_AYA_ID", -1)
@@ -67,7 +74,7 @@ class QuranViewerActivity : ComponentActivity() {
 
             // Calculate dynamic font size based on settings
             val fontSizeSp = remember(settings.fontSize) {
-                5.sp * settings.fontSize
+                1.sp * settings.fontSize
             }
 
             // Create list state
@@ -107,7 +114,10 @@ class QuranViewerActivity : ComponentActivity() {
             // Update adjacent pages as the user scrolls
             LaunchedEffect(currentCenterEntry?.id) {
                 currentCenterEntry?.id?.let { id ->
-                    viewModel.updateAdjacentPages(id)
+                    if (currentCenterEntry!!.page != currentPage){
+                        viewModel.updateAdjacentPages(id)
+                        currentPage = currentCenterEntry!!.page
+                    }
                 }
             }
 
@@ -176,26 +186,15 @@ fun BaseQuranCard(
     val context = LocalContext.current
     val textToCopy = entry.text
 
-    // Apply dark mode to card colors
-    val cardColors = if (isDarkMode) {
-        CardDefaults.cardColors(
-            backgroundColor = MaterialTheme.colors.surface,
-            contentColor = MaterialTheme.colors.onSurface
-        )
-    } else {
-        CardDefaults.cardColors(
-            backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
-            contentColor = MaterialTheme.colors.onPrimary
-        )
-    }
-
     // Force RTL for Arabic content
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        val mainColor = colorResource(if (isDarkMode) {R.color.black} else {R.color.white})
         Card(
+//            cardColors = CardDefaults.cardColors(),
             onClick = { },
-//            colors = cardColors,
             contentPadding = PaddingValues(horizontal = 1.dp, vertical = 0.dp),
             modifier = Modifier
+                .background(mainColor)
                 .fillMaxWidth()
                 .combinedClickable(
                     onClick = { },
@@ -205,7 +204,7 @@ fun BaseQuranCard(
                         Toast.makeText(context, "تم النسخ", Toast.LENGTH_SHORT).show()
                     }
                 )
-//                .background(cardColors)
+//                .background(cardColors.backgroundColor)
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -264,6 +263,7 @@ fun AyaCard(
     fontSize: androidx.compose.ui.unit.TextUnit,
     isDarkMode: Boolean
 ) {
+    val secondaryColor = colorResource(if (isDarkMode) {R.color.white} else {R.color.black})
     BaseQuranCard(
         entry = entry,
         fontSize = fontSize,
@@ -275,7 +275,8 @@ fun AyaCard(
                 style = MaterialTheme.typography.body1.copy(
                     textDirection = TextDirection.Rtl,
                     fontSize = fontSize,
-                    lineHeight = fontSize * 1.5
+                    lineHeight = fontSize * 1.5,
+                    color = secondaryColor
                 ),
                 fontFamily = HafsSmartFontFamily,
                 color = if (isDarkMode)
@@ -311,3 +312,4 @@ data class CardColors(
     val disabledBackgroundColor: androidx.compose.ui.graphics.Color,
     val disabledContentColor: androidx.compose.ui.graphics.Color
 )
+
