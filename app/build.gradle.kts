@@ -18,7 +18,7 @@ extensions.configure<ApplicationExtension> {
         minSdk = 30
         targetSdk = 36
         versionCode = 8
-        versionName = "1.1.3"
+        versionName = "1.2.0"
     }
 
     compileOptions {

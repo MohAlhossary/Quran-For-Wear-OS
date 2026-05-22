@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
-import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -124,20 +123,15 @@ fun QuranMenuScreen(items: List<QuranListEntry>) {
 @Composable
 fun QuranMenuItem(entry: QuranListEntry, onClick: () -> Unit) {
     val language = SettingsManager.settings.collectAsState().value.language
+    val isJuz = entry.type == "J"
     TitleCard(
         onClick = onClick,
         title = {
             Text(
-                text = if (language == "EN") {
-                    if (entry.type == "S") "Sura ${entry.suraNameEn}"
-                    else "Juzz ${entry.jozz}"
-                } else if (language == "AR"){
-                    if (entry.type == "S") "سورة " + entry.suraNameAr
-                    else "جزء " + entry.jozz
-                } else {
-                    "" //FIXME bug material right here 😭😭
-                },
-                color = if (entry.type == "S") Color.Cyan else Color.Yellow,
+                text =
+                    getStringInLanguage(if (entry.type == "S") R.string.entrypoints_sura else R.string.entrypoints_juz, language) +
+                            ' ' + (if (isJuz) entry.jozz else (if (language == "EN") entry.suraNameEn else entry.suraNameAr)),
+                color = if (isJuz) Color.Yellow else Color.Cyan,
                 fontFamily = HafsRegularFontFamily,
                 style = TextStyle(textDirection = when(language){ //This will only fix the text direction not alignment
                     "AR" -> TextDirection.Rtl
@@ -151,7 +145,7 @@ fun QuranMenuItem(entry: QuranListEntry, onClick: () -> Unit) {
             )
         }
     ) {
-        if (entry.type == "J") {
+        if (isJuz) {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 Text(
                     entry.text,

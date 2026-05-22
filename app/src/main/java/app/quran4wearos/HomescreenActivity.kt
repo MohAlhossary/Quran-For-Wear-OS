@@ -87,7 +87,8 @@ fun HomeScreen(
                         .padding(4.dp)
                 ) {
                     Text(
-                        text = if (settings.language == "AR") "القرآن" else "Quran",
+                        text =
+                            getStringInLanguage(R.string.homescreen_settings, SettingsManager.settings.collectAsState().value.language),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(16.dp)
                     )
@@ -102,7 +103,8 @@ fun HomeScreen(
                         .padding(4.dp)
                 ) {
                     Text(
-                        text = if (settings.language == "AR") "الإعدادات" else "Settings",
+                        text =
+                            getStringInLanguage(R.string.homescreen_quran, SettingsManager.settings.collectAsState().value.language),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(16.dp)
                     )

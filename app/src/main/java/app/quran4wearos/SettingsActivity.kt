@@ -1,6 +1,7 @@
 // Main Settings Activity
 package app.quran4wearos
 
+import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -35,6 +36,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -60,7 +63,6 @@ import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
-import androidx.wear.tooling.preview.devices.WearDevices
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.layout.scrollAway
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -90,13 +92,29 @@ class SettingsActivity : ComponentActivity() {
     }
 }
 
-// Helper function to get string in a specific language
+// Helper function to get string in a specific language using Configuration
+@SuppressLint("LocalContextConfigurationRead")
 @Composable
 fun getStringInLanguage(@StringRes id: Int, languageCode: String): String {
     val context = LocalContext.current
     return remember(languageCode, id) {
+        // Create a new Configuration based on the current one
         val configuration = Configuration(context.resources.configuration)
-        configuration.setLocale(Locale.forLanguageTag(languageCode))
+        // Set the desired locale
+        configuration.setLocale(Locale(languageCode))
+        // Create a context with the new configuration and get the string
+        context.createConfigurationContext(configuration).resources.getString(id)
+    }
+}
+
+// Helper function to get string in the current device default language
+@SuppressLint("LocalContextConfigurationRead")
+@Composable
+fun getStringInDeviceLanguage(@StringRes id: Int): String {
+    val context = LocalContext.current
+    return remember(id) {
+        val configuration = Configuration(context.resources.configuration)
+        // Use system default locale (no changes)
         context.createConfigurationContext(configuration).resources.getString(id)
     }
 }
@@ -126,7 +144,7 @@ fun SettingsScreen(
     }
 
     // Determine current language code for string resources
-    val currentLanguageCode = remember(settingsState.language) {
+    val     currentLanguageCode = remember(settingsState.language) {
         when (settingsState.language) {
             "AR" -> "ar"
             "EN" -> "en"
@@ -162,7 +180,7 @@ fun SettingsScreen(
             item {
                 ExpandableSettingRadioButton(
                     icon = R.drawable.ic_language,
-                    title = getStringInLanguage(R.string.settings_language, currentLanguageCode),
+                    title = getStringInLanguage(R.string.settings_language, currentLanguageCode) + ' ',
                     summary = settingsState.languageDisplay,
                     isExpanded = settingsState.isLanguageExpanded,
                     onExpandChange = { settingsViewModel.toggleLanguageExpanded() }
@@ -234,7 +252,7 @@ fun SettingsScreen(
 
                     AyaCard(
                         entry = sampleEntry,
-                        fontSize = (settingsState.fontSize).sp,
+                        fontSize = settingsState.fontSize.sp,
                         isDarkMode = settingsState.darkMode,
                     )
                 }
@@ -253,19 +271,26 @@ fun SettingsScreen(
     }
 }
 
-// Helper function to apply locale changes
+// Helper function to apply locale changes using Configuration
 fun applyLocale(context: android.content.Context, languageCode: String) {
     val locale = when (languageCode) {
-        "AR" -> Locale.forLanguageTag("ar")
-        "EN" -> Locale.forLanguageTag("en")
+        "AR" -> Locale("ar")
+        "EN" -> Locale("en")
         else -> {
             // For device default, use the system locale
             val deviceLang = getDeviceDefaultLanguage()
-            if (deviceLang == "AR") Locale.forLanguageTag("ar") else Locale.forLanguageTag("en")
+            if (deviceLang == "AR") Locale("ar") else Locale("en")
         }
     }
 
-    // Set the application locale using LocaleListCompat
+    // Create a new Configuration with the desired locale
+    val configuration = Configuration(context.resources.configuration)
+    configuration.setLocale(locale)
+
+    // Update the context's resources with the new configuration
+    context.resources.updateConfiguration(configuration, context.resources.displayMetrics)
+
+    // Also update the application locale for future activities
     val localeList = LocaleListCompat.create(locale)
     AppCompatDelegate.setApplicationLocales(localeList)
 }
@@ -612,7 +637,7 @@ fun AboutDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val currentLanguageCode = remember { SettingsManager.settings.value.language } // You might want to get this from settings
+    val currentLanguageCode = remember { SettingsManager.settings.value.language }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -704,10 +729,10 @@ fun RadioSettingItem(
 }
 
 
-// Helper function to get device default language
+// Helper function to get device default language, "EN" and "AR"
 fun getDeviceDefaultLanguage(): String {
     val deviceLanguage = Locale.getDefault().language
-    println("Device language = $deviceLanguage")
+    println("Device language = ${deviceLanguage}")
     return when {
         deviceLanguage.equals("ar", ignoreCase = true) -> "AR"
         else -> "EN"
@@ -808,7 +833,7 @@ data class SettingsState(
 
 // Preview functions
 @OptIn(ExperimentalHorologistApi::class)
-@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
+@Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
 @Composable
 fun PreviewExpandableSettingItem() {
     val listState = rememberScalingLazyListState()
@@ -831,7 +856,7 @@ fun PreviewExpandableSettingItem() {
     }
 }
 
-@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
+@Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
 @OptIn(ExperimentalHorologistApi::class)
 @Composable
 fun PreviewTest() {
@@ -871,18 +896,9 @@ fun PreviewTest() {
     }
 }
 
-@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
+@Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
 @OptIn(ExperimentalHorologistApi::class)
 @Composable
 fun PreviewSettingsScreen() {
     SettingsScreen()
 }
-
-//@Preview(showSystemUi = true, uiMode = UI_MODE_NIGHT_YES)
-//@Composable
-//fun previewAyaCard() {
-//    AyaCard(
-//        QuranEntry(),
-//        c
-//    )
-//}
