@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.application")
     // In AGP 9.0, the Compose Compiler is now a plugin
-    id("org.jetbrains.kotlin.plugin.compose") version "2.3.10"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.3.21"
 }
 
 // 1. Android-specific configuration
@@ -17,8 +17,8 @@ extensions.configure<ApplicationExtension> {
         applicationId = "app.quran4wearos"
         minSdk = 30
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.2.0"
+        versionCode = 9
+        versionName = "1.2.1"
     }
 
     compileOptions {
